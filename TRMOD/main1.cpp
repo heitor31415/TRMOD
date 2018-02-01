@@ -1,11 +1,12 @@
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
+#include "misc.h"
 using namespace std;
 int main()
 {
-	printf("WORKED\n");
-	printf("Next step will be implement GSL lib (commit test)");
-	printf("NEW BRANCH, change on it");
+	printf("FACE NUMBER: %d\n", faceNumberConverter(0));
 	//new commit, 2 ahead
 	system("PAUSE");
 	return 0;
