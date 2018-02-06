@@ -63,7 +63,7 @@ int ItSolver(gsl_spmatrix *A, double *Load, double *Temp, int size)
 	return result;
 }
 //
-// --- this method calculates the heat generation
+// --- function converts MARCs face numbering to the used Face Numbering
 //
 int faceNumberConverter(int MarcFaceNumber)
 {

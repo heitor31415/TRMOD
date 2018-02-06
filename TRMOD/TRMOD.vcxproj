@@ -82,9 +82,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Element.cpp" />
     <ClCompile Include="main1.cpp" />
+    <ClCompile Include="Math8.cpp" />
+    <ClCompile Include="MatrixStuff_Modal.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Element.h" />
+    <ClInclude Include="Math8.h" />
+    <ClInclude Include="MatrixStuff_Modal.h" />
     <ClInclude Include="misc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
