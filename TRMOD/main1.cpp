@@ -38,9 +38,7 @@ int main(){
 	########################## READING .dat INPUT FILE #################################
 	#################################################################################### */
 	FILE *INPUT;
-	//INPUT = fopen("modifiedDATAFlux.dat", "r"); // "fileName.dat"
-	//INPUT = fopen("modifiedDATAFlux.dat", "r");
-	INPUT = fopen("TireLayer.dat", "r");
+	INPUT = fopen("TireLayer.dat", "r");// "fileName.dat"
 	fgets(s, 256, INPUT);// >>Text line= MESH SIZING
 
 	/* Read the sizing values, which are Number of Elements and number of nodes. */
@@ -88,15 +86,6 @@ int main(){
 		sscanf(s, "%d %d %d %d %d %d %d %d %d %d %lf", &elementNumber, &connectMatrix[i][0], &connectMatrix[i][1], &connectMatrix[i][2], &connectMatrix[i][3], &connectMatrix[i][4], &connectMatrix[i][5], &connectMatrix[i][6], &connectMatrix[i][7], &connectMatrix[i][8], &corFactor);
 	}
 
-	/* Material properties
-	fgets(s, 256, INPUT); // >>Text Line= MATERIAL CONDUCTIVITY (ISOTROPIC)
-	fgets(s, 256, INPUT);
-	sscanf(s, "%lf", &matConductivity);
-
-	// Ambient Temperature
-	fgets(s, 256, INPUT); // Text Line= AMBIENT TEMPERATURE
-	fgets(s, 256, INPUT);
-	sscanf(s, "%lf", &ambTemp);*/
 
 	double intTemp = 180.0, outTemp = 30.0;
 	/* ####### READING BOUNDARY CONDITIONS #########*/
@@ -271,7 +260,13 @@ int main(){
 		memset(Ssum, 0, 64 * sizeof(double));
 		memset(localS, 0, 64 * sizeof(double));
 
-		elem.Comp_Conductivity(matConductivity, localS); // Compute the Local S (Local Stiffness matrix)
+		if (connectMatrix[elementcount - 1][8] == 302)
+		{ 
+			elem.Comp_Conductivity(90, localS); // Compute the Local S (Local Stiffness matrix)
+			fprintf(CONV, "%d\n", elementcount);
+		}
+		else
+			elem.Comp_Conductivity(matConductivity, localS); // Compute the Local S (Local Stiffness matrix)
 
 		if (heatGenList[elementcount - 1] != 0.0) // Check if there is Heat generation on the element
 			elem.Comp_HeatGeneration(heatGenList[elementcount - 1], heatGenFlocal, 1); // Compute Heat gen.
@@ -294,7 +289,7 @@ int main(){
 				else if (connectMatrix[elementcount - 1][8] == 300 + nElCrossSec) // outter element
 				{
 					ambTemp = outTemp;
-					fprintf(CONV, "%d:2\n", elementcount);
+					//fprintf(CONV, "%d:2\n", elementcount);
 				}
 				elem.Comp_Convection_Diagonal(convList[elementcount - 1][w], ambTemp, localSConvection, convFlocal, faceNumberConverter(w));
 				math.compute_sumVec(convFlocal, Fsum);
@@ -307,13 +302,9 @@ int main(){
 			for (int n = 0; n < 8; n++)
 			{
 				double v = gsl_spmatrix_get(SGt, connectMatrix[elementcount - 1][m] - 1, connectMatrix[elementcount - 1][n] - 1);
-				if (elementcount == 1)
-					printf("b %lf %lf\n", v, math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n));
 				//SG[connectMatrix[elementcount - 1][m] - 1][connectMatrix[elementcount - 1][n] - 1] += math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n);
 				gsl_spmatrix_set(SGt, connectMatrix[elementcount - 1][m] - 1, connectMatrix[elementcount - 1][n] - 1, gsl_spmatrix_get(SGt, connectMatrix[elementcount - 1][m] - 1, connectMatrix[elementcount - 1][n] - 1) + math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n));
 				v = gsl_spmatrix_get(SGt, connectMatrix[elementcount - 1][m] - 1, connectMatrix[elementcount - 1][n] - 1);
-				if (elementcount == 1)
-					printf("a %f %f\n", v, math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n));
 			}
 			FG[connectMatrix[elementcount - 1][m] - 1] += Fsum[m] + heatGenFlocal[m];
 		}
