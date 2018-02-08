@@ -3,14 +3,14 @@
 #include "misc.h"
 #include "MatrixStuff_Modal.h"
 #include <string>
+#include "Tmesh.h"
+
 using namespace std;
 int main(){
 	/*  MESH SIZING AND CONNECTIVITY MATRIX */
 	int nDoF, nEl, nElCrossSec; // Number of degrees of Freedom(= num.Nodes in thermal analysis) and number of elements
-	int **connectMatrix; // Connectivity matrix, which contains elements global nodes numbers.
 
 	/* NODES POSITIONS AND GENERAL VARIABLES */
-	double *xn, *yn, *zn; // Global nodes' coordinates
 	double matConductivity = 35, ambTemp; // Material property and Ambient Temperature (used in convection)
 
 	/* NATURAL/NEUMANN BOUNDARY CONDITIONS VARIABLES */
@@ -40,17 +40,14 @@ int main(){
 	FILE *INPUT;
 	//INPUT = fopen("modifiedDATAFlux.dat", "r"); // "fileName.dat"
 	//INPUT = fopen("modifiedDATAFlux.dat", "r");
-	INPUT = fopen("TireLayer.dat", "r");
+	INPUT = fopen("TireNEG.dat", "r");
 	fgets(s, 256, INPUT);// >>Text line= MESH SIZING
 
 	/* Read the sizing values, which are Number of Elements and number of nodes. */
 	fgets(s, 256, INPUT);
-	sscanf(s, "%d %d %d", &nDoF, &nEl, &nElCrossSec); // Number of elements & nodes on the model, resp.
+	sscanf(s, "%d %d %d", &nDoF, &nEl, &nElCrossSec);	// Number of elements & nodes on the model, resp.
+	CTmesh cMesh(nDoF, nEl, nElCrossSec);				// coarse/common mesh
 
-	/* Allocating memory to store node's coordinates*/
-	xn = Matrix.Vector_Allocate(nDoF, 0.0, &allocStatus); // nDoF is the number of nodes/Deg. of Freedom(nDoF)
-	yn = Matrix.Vector_Allocate(nDoF, 0.0, &allocStatus);
-	zn = Matrix.Vector_Allocate(nDoF, 0.0, &allocStatus);
 
 	/* Store nodes' global coordinates >>(NODES HAVE TO BE SORTED)<<*/
 	int globalNodeNumber, elementType, elementNumber; // Not used in the current version of the code
@@ -61,7 +58,7 @@ int main(){
 	/* Nodes coordinates input */
 	for (int i = 0; i < nDoF; i++){ //Loop over all nodes
 		fgets(s, 256, INPUT);
-		sscanf(s, "%d %lf %lf %lf %d", &globalNodeNumber, &xn[i], &yn[i], &zn[i], &layer); // Scan each node coordinate
+		sscanf(s, "%d %lf %lf %lf %d", &globalNodeNumber, &cMesh.xn[i], &cMesh.yn[i], &cMesh.zn[i], &layer); // Scan each node coordinate
 		if (layer < 0){
 			if (fixedNodesStart){ // just happens one time and allocate 
 				fixedNodesStart = false;
@@ -77,26 +74,13 @@ int main(){
 		}
 	}
 
-	/* Allocating and scanning the Connectivity matrix (Matrix with element's nodes)*/
-	connectMatrix = Matrix.Matrix_Allocate_Int(nEl, 9, 0, &allocStatus); //8 = Number of nodes per element (HEX8)
-
 	fgets(s, 256, INPUT); // >>Text Line= CONNECTIVITY MATRIX
 	int elemPosition;
 	double corFactor; // not used in current version
 	for (int i = 0; i < nEl; i++){ // Loop over all the elements
 		fgets(s, 256, INPUT);
-		sscanf(s, "%d %d %d %d %d %d %d %d %d %d %lf", &elementNumber, &connectMatrix[i][0], &connectMatrix[i][1], &connectMatrix[i][2], &connectMatrix[i][3], &connectMatrix[i][4], &connectMatrix[i][5], &connectMatrix[i][6], &connectMatrix[i][7], &connectMatrix[i][8], &corFactor);
+		sscanf(s, "%d %d %d %d %d %d %d %d %d %d %lf", &elementNumber, &cMesh.cMat[i][0], &cMesh.cMat[i][1], &cMesh.cMat[i][2], &cMesh.cMat[i][3], &cMesh.cMat[i][4], &cMesh.cMat[i][5], &cMesh.cMat[i][6], &cMesh.cMat[i][7], &cMesh.cMat[i][8], &corFactor);
 	}
-
-	/* Material properties
-	fgets(s, 256, INPUT); // >>Text Line= MATERIAL CONDUCTIVITY (ISOTROPIC)
-	fgets(s, 256, INPUT);
-	sscanf(s, "%lf", &matConductivity);
-
-	// Ambient Temperature
-	fgets(s, 256, INPUT); // Text Line= AMBIENT TEMPERATURE
-	fgets(s, 256, INPUT);
-	sscanf(s, "%lf", &ambTemp);*/
 
 	double intTemp = 180.0, outTemp = 30.0;
 	/* ####### READING BOUNDARY CONDITIONS #########*/
@@ -105,68 +89,17 @@ int main(){
 	convList = Matrix.Matrix_Allocate(nEl, 6, 0.0, &allocStatus); //     "      convection coef. in each Face (HEX8)
 	for (int i = 0; i < nEl; i++)
 	{
-		if (connectMatrix[i][8] == 301) //inner element
+		if (cMesh.cMat[i][8] == 301) //inner element
 		{
 			convList[i][0] = 30.0;
 		}
-		else if (connectMatrix[i][8] == 300 + nElCrossSec) // outter element
+		else if (cMesh.cMat[i][8] == 300 + nElCrossSec) // outter element
 			convList[i][2] = 50.0;
 	}
 
 	int nBC, bElem; // Counter: Number of boundary conditions (nBC) and index: boundary Element (bElem) 
 	double BCvalue; // Variable that store the BC value, it is used when the BC value and its index are read at the same time.
 
-	/* Reading Heat Generation Boundary conditions
-	fgets(s, 256, INPUT); // TXT = heat generation list
-
-	fgets(s, 256, INPUT);
-	sscanf(s, "%d", &nBC); // Number of elements with heat generation
-	// Faces with flux
-	fgets(s, 256, INPUT); //TXT= choosing elements with heat gen.
-	for (int i = 0; i < nBC; i++){ // Loop over number of elements with Heat generation
-	fgets(s, 256, INPUT);
-	sscanf(s, "%d %lf", &bElem, &BCvalue);
-	heatGenList[bElem - 1] = BCvalue; // 0 indexed list.
-	}
-
-	/* Reading flux Boundary conditions*/
-	/*
-	fgets(s, 256, INPUT); // >>Text line= Elements with flux
-	fgets(s, 256, INPUT);
-	sscanf(s, "%d", &nBC); // Number of ELEMENTS with heat flux BC
-	fgets(s, 256, INPUT); // >>Text line= choosing the faces to put the flux on
-	for (int i = 0; i < nBC; i++){ //Loop over all ELEMENTS with heat flux BC
-	fgets(s, 256, INPUT);
-	sscanf(s, "%d", &bElem); // Element with flux BC
-	bElem--; // 0 indexed vector
-	fgets(s, 256, INPUT); // Each column contains the normal heat flux value. 0 if there is no heat flux on the face.
-	sscanf(s, "%lf %lf %lf %lf %lf %lf", &fluxList[bElem][0], &fluxList[bElem][1], &fluxList[bElem][2], &fluxList[bElem][3], &fluxList[bElem][4], &fluxList[bElem][5]);
-	}
-	fgets(s, 256, INPUT); // >>Text line= Elements with flux
-	fgets(s, 256, INPUT);
-	sscanf(s, "%d", &nBC); // Number of ELEMENTS with heat flux BC
-	/* Reading Convection(Film) Boundary conditions*/
-	/*
-	fgets(s, 256, INPUT);//>>Text line= choosing the faces to put convection on
-	for (int i = 0; i < nBC; i++){ //Loop over all ELEMENTS with convection BC
-	fgets(s, 256, INPUT);
-	sscanf(s, "%d", &bElem);// Element with convection(film) BC
-	bElem--; // 0 indexed vector
-	fgets(s, 256, INPUT); // Each column must contain the convection(film) coeficient (h). ambTemp will be used in all faces
-	sscanf(s, "%lf %lf %lf %lf %lf %lf", &convList[bElem][0], &convList[bElem][1], &convList[bElem][2], &convList[bElem][3], &convList[bElem][4], &convList[bElem][5]);
-	}
-	fgets(s, 256, INPUT); // TXT=Num of Nodes with Dirichlet BC
-	fgets(s, 256, INPUT);
-	sscanf(s, "%d", &nFixedNodes);
-
-	/* Reading Dirichlet boundary conditions*/
-	/*
-	// List of nodes with Dirichlet BC
-	fgets(s, 256, INPUT); // >>Text line: List of nodes with Dirichlet BC
-	for (int i = 0; i < nFixedNodes; i++){
-	fgets(s, 256, INPUT);
-	sscanf(s, "%d %lf", &fixedNodesList[i], &tempFixedNodes[i]);
-	}*/
 
 	// Free nodes *OBS: The nodes number have to be complete and sorted, so if there is
 	// 100 nodes, the nodes have to be numbered from 1 to 100.
@@ -259,9 +192,9 @@ int main(){
 		for (int h = 0; h < 8; h++) // Loop over each node
 		{
 			// Get global coordinates of every node in element 'elementcount'
-			x[h] = xn[connectMatrix[elementcount - 1][h] - 1];
-			y[h] = yn[connectMatrix[elementcount - 1][h] - 1];
-			z[h] = zn[connectMatrix[elementcount - 1][h] - 1];
+			x[h] = cMesh.xn[cMesh.cMat[elementcount - 1][h] - 1];
+			y[h] = cMesh.yn[cMesh.cMat[elementcount - 1][h] - 1];
+			z[h] = cMesh.zn[cMesh.cMat[elementcount - 1][h] - 1];
 
 		}
 		elem.Init(x, y, z); // Initializing object elem, this avoid passing pointer to x, y, z every call
@@ -286,12 +219,12 @@ int main(){
 
 		for (int w = 0; w < 6; w++) // Loop over the faces to calculate the Convection
 			if (convList[elementcount - 1][w] != 0){
-				if (connectMatrix[elementcount - 1][8] == 301) //inner element
+				if (cMesh.cMat[elementcount - 1][8] == 301) //inner element
 				{
 					ambTemp = intTemp;
 					//fprintf(CONV, "%d:0\n", elementcount);
 				}
-				else if (connectMatrix[elementcount - 1][8] == 300 + nElCrossSec) // outter element
+				else if (cMesh.cMat[elementcount - 1][8] == 300 + nElCrossSec) // outter element
 				{
 					ambTemp = outTemp;
 					fprintf(CONV, "%d:2\n", elementcount);
@@ -306,16 +239,16 @@ int main(){
 		{
 			for (int n = 0; n < 8; n++)
 			{
-				double v = gsl_spmatrix_get(SGt, connectMatrix[elementcount - 1][m] - 1, connectMatrix[elementcount - 1][n] - 1);
+				double v = gsl_spmatrix_get(SGt, cMesh.cMat[elementcount - 1][m] - 1, cMesh.cMat[elementcount - 1][n] - 1);
 				if (elementcount == 1)
 					printf("b %lf %lf\n", v, math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n));
-				//SG[connectMatrix[elementcount - 1][m] - 1][connectMatrix[elementcount - 1][n] - 1] += math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n);
-				gsl_spmatrix_set(SGt, connectMatrix[elementcount - 1][m] - 1, connectMatrix[elementcount - 1][n] - 1, gsl_spmatrix_get(SGt, connectMatrix[elementcount - 1][m] - 1, connectMatrix[elementcount - 1][n] - 1) + math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n));
-				v = gsl_spmatrix_get(SGt, connectMatrix[elementcount - 1][m] - 1, connectMatrix[elementcount - 1][n] - 1);
+				//SG[cMesh.cMat[elementcount - 1][m] - 1][cMesh.cMat[elementcount - 1][n] - 1] += math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n);
+				gsl_spmatrix_set(SGt, cMesh.cMat[elementcount - 1][m] - 1, cMesh.cMat[elementcount - 1][n] - 1, gsl_spmatrix_get(SGt, cMesh.cMat[elementcount - 1][m] - 1, cMesh.cMat[elementcount - 1][n] - 1) + math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n));
+				v = gsl_spmatrix_get(SGt, cMesh.cMat[elementcount - 1][m] - 1, cMesh.cMat[elementcount - 1][n] - 1);
 				if (elementcount == 1)
 					printf("a %f %f\n", v, math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n));
 			}
-			FG[connectMatrix[elementcount - 1][m] - 1] += Fsum[m] + heatGenFlocal[m];
+			FG[cMesh.cMat[elementcount - 1][m] - 1] += Fsum[m] + heatGenFlocal[m];
 		}
 	}
 	fclose(CONV);

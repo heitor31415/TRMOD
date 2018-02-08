@@ -27,6 +27,9 @@
     <ClCompile Include="MatrixStuff_Modal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Tmesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="misc.h">
@@ -39,6 +42,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="MatrixStuff_Modal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Tmesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
