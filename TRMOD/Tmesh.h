@@ -15,4 +15,7 @@ public:
 	int **cMat;						  // Connectivity 
 	bool allocStatus;
 
+private:
+	int tail;
+	void expandConnectMatrix(unsigned int size);
 };

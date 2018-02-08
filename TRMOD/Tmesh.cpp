@@ -8,6 +8,7 @@ CTmesh::CTmesh(unsigned int nNodes, unsigned int nElements, unsigned int nElCS)
 	nDoF = nNodes;
 	nEl = nElements;
 	nElCrossSec = nElCS;
+	tail = nElements;
 
 
 	CMatrixStuff_Modal Matrix; // for alocating vectors and matrices (int or double)
@@ -28,5 +29,13 @@ void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
 {
 	int oldElement[8];
 	memcpy(oldElement, cMat[element], 8);
+	//if
 	
+}
+
+void CTmesh::expandConnectMatrix(unsigned int size)
+{
+	tail *= 2;						// Amortized complexity
+	for (int c = 0; c < 9; c++)
+		realloc(cMat[c], tail);
 }
