@@ -20,3 +20,13 @@ CTmesh::CTmesh(unsigned int nNodes, unsigned int nElements, unsigned int nElCS)
 	/* Allocating memory to store element's global nodes*/
 	cMat = Matrix.Matrix_Allocate_Int(nEl, 9, 0, &allocStatus); // nEl is the number of Elements
 }
+// ------------------------------------------------------------------------------------------------------------------ 
+// --- addLayer inserts a layer with layerMat conductivity and 'LayerThickness' on the middle of element 'element') 
+// ------------------------------------------------------------------------------------------------------------------ 
+
+void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
+{
+	int oldElement[8];
+	memcpy(oldElement, cMat[element], 8);
+	
+}

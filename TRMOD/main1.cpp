@@ -50,11 +50,11 @@ int main(){
 
 
 	/* Store nodes' global coordinates >>(NODES HAVE TO BE SORTED)<<*/
-	int globalNodeNumber, elementType, elementNumber; // Not used in the current version of the code
+	int globalNodeNumber, elementType, elementNumber;	// Not used in the current version of the code
 	fgets(s, 256, INPUT); // >>Text line= GLOBAL NODES COORDINATES
 
-	int layer, fixedNodesCounter = 0; // Layer not used in the current version
-	bool fixedNodesStart = true;
+	int layer, fixedNodesCounter = 0;					// Layer represents which layer(s) the node belongs
+	bool fixedNodesStart = true;						// Used to identify the first fixed node
 	/* Nodes coordinates input */
 	for (int i = 0; i < nDoF; i++){ //Loop over all nodes
 		fgets(s, 256, INPUT);
@@ -69,7 +69,7 @@ int main(){
 				freeNodesList = Matrix.Vector_Allocate_Int(nFreeNodes, 0, &allocStatus); // List with free nodes
 			}
 			fixedNodesList[fixedNodesCounter] = globalNodeNumber;
-			tempFixedNodes[fixedNodesCounter] = 120.0;
+			tempFixedNodes[fixedNodesCounter] = 120.0;						// A map can be used to fixed nodes*
 			fixedNodesCounter++;
 		}
 	}
