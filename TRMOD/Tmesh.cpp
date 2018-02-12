@@ -30,30 +30,53 @@ CTmesh::CTmesh(unsigned int nNodes, unsigned int nElements, unsigned int nElCS)
 
 void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
 {
-	int oldElement[8];
-	double x[8], y[8], z[8];			//New element nodes position
+	int oldElement[8];					//Connectivity matrix of the old Element
+	double x[8], y[8], z[8];			//Layer nodes position
 	memcpy(oldElement, cMat[element], 8);
 
-	if (tailElements == nEl)
-		expandConnectMatrix(nEl);
-	if (tailNodes == nDoF)
-		expandNodesArray(nDoF);
-	for (int i = 0; i < 4; i++)			// Loop over each local node
+
+	/* Computing coordinates of layer`s nodes*/
+	for (int i = 0; i < 4; i++)			// Loop over each  edge
 	{
-		double edge[3];
-		edge[1] = xn[oldElement[i] - 1] - xn[oldElement[i + 4] - 1];
+		double edge[3], norm;
+		edge[1] = xn[oldElement[i] - 1] - xn[oldElement[i + 4] - 1]; // Calculating edge x component
 		edge[2] = yn[oldElement[i] - 1] - yn[oldElement[i + 4] - 1];
 		edge[3] = zn[oldElement[i] - 1] - zn[oldElement[i + 4] - 1];
-		double norm;
-		norm = compute_norm(edge);
-		
-		x[i] = xn[oldElement[i] - 1] + layerThic*edge[1];
-		x[i+4]=
+		norm = compute_norm(edge);									// computing edge norm
+		x[i] = (xn[oldElement[i] - 1] + xn[oldElement[i + 4] - 1]) / 2 - (layerThic / 2)*edge[1] / norm; // Layer nodes coordinates
+		x[i + 4] = (xn[oldElement[i] - 1] + xn[oldElement[i + 4] - 1]) / 2 + (layerThic / 2)*edge[1] / norm;
+		y[i] = (yn[oldElement[i] - 1] + yn[oldElement[i + 4] - 1]) / 2 - (layerThic / 2)*edge[2] / norm;
+		y[i + 4] = (yn[oldElement[i] - 1] + yn[oldElement[i + 4] - 1]) / 2 + (layerThic / 2)*edge[2] / norm;
+		z[i] = (zn[oldElement[i] - 1] + zn[oldElement[i + 4] - 1]) / 2 - (layerThic / 2)*edge[3] / norm;
+		z[i + 4] = (zn[oldElement[i] - 1] + zn[oldElement[i + 4] - 1]) / 2 + (layerThic / 2)*edge[3] / norm;
 	}
-	
-	nEl += 2;							// 1 element turns in 3 elements
-	nDoF += 8;							// 1 new element = 8 nodes
 
+	/* Checking if there is sufficient space on current matrices*/
+	if (tailElements <= nEl+2)				// Global connect. matrix check
+		expandConnectMatrix(nEl);
+	if (tailNodes <= nDoF+8)				// Global nodes coordiantes vector check
+		expandNodesArray(nDoF);
+
+	/*Updating Conectivity matrix*/
+	for (int i = 0; i < 4; i++)
+	{
+		cMat[element][i + 4] = nDoF + i;		//Updating 'element'
+
+		cMat[nEl][i] = nDoF+i;					// Layer element
+		cMat[nEl][i + 4] = nDoF + i + 4; 
+
+		cMat[nEl + 1][i] = nDoF + i + 4;		// New element, with same material of 'element'
+		cMat[nEl + 1][i+4] = oldElement[i + 4];	
+
+	}
+	nEl += 2;									// Updating number of elements
+	for (int i = 0; i < 8; i++)
+	{
+		xn[nDoF+i] = x[i];
+		yn[nDoF + i] = y[i];
+		zn[nDoF + i] = z[i];
+		nDoF++;									// Updating number of nodes
+	}
 	
 }
 
