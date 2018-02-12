@@ -3,7 +3,7 @@
 #include "MatrixStuff_Modal.h"
 
 using namespace std;
-class CTmesh
+class CTmesh : public CMath8
 {
 public:
 	CTmesh(unsigned int nNodes, unsigned int nElements, unsigned int nElCS);
@@ -16,6 +16,7 @@ public:
 	bool allocStatus;
 
 private:
-	int tail;
+	int tailNodes, tailElements;
 	void expandConnectMatrix(unsigned int size);
+	void expandNodesArray(unsigned int size);
 };
