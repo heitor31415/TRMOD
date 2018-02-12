@@ -32,7 +32,9 @@ void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
 {
 	int oldElement[8];					//Connectivity matrix of the old Element
 	double x[8], y[8], z[8];			//Layer nodes position
-	memcpy(oldElement, cMat[element], 8);
+	for (int k = 0; k < 8; k++)
+		oldElement[k] = cMat[element][k];
+	//memcpy(oldElement, cMat[element], 8);
 
 
 	/* Computing coordinates of layer`s nodes*/
@@ -53,14 +55,15 @@ void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
 
 	/* Checking if there is sufficient space on current matrices*/
 	if (tailElements <= nEl+2)				// Global connect. matrix check
-		expandConnectMatrix(nEl);
+		expandConnectMatrix();
 	if (tailNodes <= nDoF+8)				// Global nodes coordiantes vector check
-		expandNodesArray(nDoF);
+		expandNodesArray();
 
 	/*Updating Conectivity matrix*/
 	for (int i = 0; i < 4; i++)
 	{
 		cMat[element][i + 4] = nDoF + i;		//Updating 'element'
+
 
 		cMat[nEl][i] = nDoF+i;					// Layer element
 		cMat[nEl][i + 4] = nDoF + i + 4; 
@@ -80,17 +83,18 @@ void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
 	
 }
 
-void CTmesh::expandConnectMatrix(unsigned int size)
+void CTmesh::expandConnectMatrix()
 {
 	tailElements *= 2;						// Optimized for Amortized complexity
-	for (int c = 0; c < 9; c++)
-		realloc(cMat[c], tailElements);
+	for (int i = 0; i < 9; i++)
+		(int*)realloc(cMat[i], tailElements*sizeof(int));
+	system("PAUSE");
 }
 
-void CTmesh::expandNodesArray(unsigned int size)
+void CTmesh::expandNodesArray()
 {
 	tailNodes *= 2;							// Optimized for Amortized complexity
-	realloc(xn, tailNodes);
-	realloc(yn, tailNodes);
-	realloc(zn, tailNodes);
+	(double*)realloc(xn, tailNodes*sizeof(double));
+	(double*)realloc(yn, tailNodes*sizeof(double));
+	(double*)realloc(zn, tailNodes*sizeof(double));
 }

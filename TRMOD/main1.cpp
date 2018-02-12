@@ -82,6 +82,16 @@ int main(){
 		sscanf(s, "%d %d %d %d %d %d %d %d %d %d %lf", &elementNumber, &cMesh.cMat[i][0], &cMesh.cMat[i][1], &cMesh.cMat[i][2], &cMesh.cMat[i][3], &cMesh.cMat[i][4], &cMesh.cMat[i][5], &cMesh.cMat[i][6], &cMesh.cMat[i][7], &cMesh.cMat[i][8], &corFactor);
 	}
 
+	/*LAYER INPUT*/
+	int oldnEl = nEl;
+	for (int i = 0; i < oldnEl; i++)
+	{
+		if (cMesh.cMat[i][8] == 303) //inner element
+		{
+			cMesh.addLayer(i, 80, 0.1);
+		}
+	}
+
 	double intTemp = 180.0, outTemp = 30.0;
 	/* ####### READING BOUNDARY CONDITIONS #########*/
 	heatGenList = Matrix.Vector_Allocate(nEl, 0.0, &allocStatus); // Stores the Heat Generation of each Element
@@ -240,13 +250,9 @@ int main(){
 			for (int n = 0; n < 8; n++)
 			{
 				double v = gsl_spmatrix_get(SGt, cMesh.cMat[elementcount - 1][m] - 1, cMesh.cMat[elementcount - 1][n] - 1);
-				if (elementcount == 1)
-					printf("b %lf %lf\n", v, math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n));
 				//SG[cMesh.cMat[elementcount - 1][m] - 1][cMesh.cMat[elementcount - 1][n] - 1] += math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n);
 				gsl_spmatrix_set(SGt, cMesh.cMat[elementcount - 1][m] - 1, cMesh.cMat[elementcount - 1][n] - 1, gsl_spmatrix_get(SGt, cMesh.cMat[elementcount - 1][m] - 1, cMesh.cMat[elementcount - 1][n] - 1) + math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n));
 				v = gsl_spmatrix_get(SGt, cMesh.cMat[elementcount - 1][m] - 1, cMesh.cMat[elementcount - 1][n] - 1);
-				if (elementcount == 1)
-					printf("a %f %f\n", v, math.ArrToMat(localS, m, n) + math.ArrToMat(Ssum, m, n));
 			}
 			FG[cMesh.cMat[elementcount - 1][m] - 1] += Fsum[m] + heatGenFlocal[m];
 		}
