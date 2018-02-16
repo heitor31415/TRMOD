@@ -66,7 +66,6 @@ int main(){
 				nFixedNodes = nDoF - nFreeNodes;
 				fixedNodesList = Matrix.Vector_Allocate_Int(nFixedNodes, 0, &allocStatus); // List with 'fixed' nodes
 				tempFixedNodes = Matrix.Vector_Allocate(nFixedNodes, 0.0, &allocStatus); // List with each fixed node temperature
-				freeNodesList = Matrix.Vector_Allocate_Int(nFreeNodes, 0, &allocStatus); // List with free nodes
 			}
 			fixedNodesList[fixedNodesCounter] = globalNodeNumber;
 			tempFixedNodes[fixedNodesCounter] = 120.0;						// A map can be used to fixed nodes*
@@ -81,9 +80,9 @@ int main(){
 		fgets(s, 256, INPUT);
 		sscanf(s, "%d %d %d %d %d %d %d %d %d %d %lf", &elementNumber, &cMesh.cMat[i][0], &cMesh.cMat[i][1], &cMesh.cMat[i][2], &cMesh.cMat[i][3], &cMesh.cMat[i][4], &cMesh.cMat[i][5], &cMesh.cMat[i][6], &cMesh.cMat[i][7], &cMesh.cMat[i][8], &corFactor);
 	}
-
+	system("PAUSE");
 	/*LAYER INPUT*/
-	int oldnEl = nEl;
+	int oldnEl = nEl, oldnDoF = nDoF;
 	for (int i = 0; i < oldnEl; i++)
 	{
 		if (cMesh.cMat[i][8] == 303) //inner element
@@ -91,7 +90,11 @@ int main(){
 			cMesh.addLayer(i, 80, 0.1);
 		}
 	}
-
+	nEl = cMesh.nEl;
+	nDoF = cMesh.nDoF;
+	nFreeNodes = nDoF - nFixedNodes;
+	printf("REFINED MESH\n nDoF: %d   nEl: %d\n\n", nDoF, nEl);
+	freeNodesList = Matrix.Vector_Allocate_Int(nFreeNodes, 0, &allocStatus); // List with free nodes
 	double intTemp = 180.0, outTemp = 30.0;
 	/* ####### READING BOUNDARY CONDITIONS #########*/
 	heatGenList = Matrix.Vector_Allocate(nEl, 0.0, &allocStatus); // Stores the Heat Generation of each Element
@@ -122,7 +125,7 @@ int main(){
 	fclose(INPUT);
 	/* #################################################################################################  */
 	printf("READ FINISHED\n");
-	printf("nDoF: %d, freeDoF: %d, fixedDoF: %d\n", nDoF, nFreeNodes, nFixedNodes);
+	printf("nDoF: %d, freeDoF: %d, fixedDoF: %d, Elements: %d\n", oldnDoF, nFreeNodes, nFixedNodes, oldnEl);
 	system("PAUSE");
 
 	// open binary file for storing the temperatures

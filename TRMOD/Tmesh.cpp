@@ -37,13 +37,13 @@ void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
 	//memcpy(oldElement, cMat[element], 8);
 
 
-	/* Computing coordinates of layer`s nodes*/
+	/* Computing coordinates of layer`s nodes
 	for (int i = 0; i < 4; i++)			// Loop over each  edge
 	{
 		double edge[3], norm;
-		edge[1] = xn[oldElement[i] - 1] - xn[oldElement[i + 4] - 1]; // Calculating edge x component
-		edge[2] = yn[oldElement[i] - 1] - yn[oldElement[i + 4] - 1];
-		edge[3] = zn[oldElement[i] - 1] - zn[oldElement[i + 4] - 1];
+		edge[0] = xn[oldElement[i] - 1] - xn[oldElement[i + 4] - 1]; // Calculating edge x component
+		edge[1] = yn[oldElement[i] - 1] - yn[oldElement[i + 4] - 1];
+		edge[2] = zn[oldElement[i] - 1] - zn[oldElement[i + 4] - 1];
 		norm = compute_norm(edge);									// computing edge norm
 		x[i] = (xn[oldElement[i] - 1] + xn[oldElement[i + 4] - 1]) / 2 - (layerThic / 2)*edge[1] / norm; // Layer nodes coordinates
 		x[i + 4] = (xn[oldElement[i] - 1] + xn[oldElement[i + 4] - 1]) / 2 + (layerThic / 2)*edge[1] / norm;
@@ -52,23 +52,54 @@ void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
 		z[i] = (zn[oldElement[i] - 1] + zn[oldElement[i + 4] - 1]) / 2 - (layerThic / 2)*edge[3] / norm;
 		z[i + 4] = (zn[oldElement[i] - 1] + zn[oldElement[i + 4] - 1]) / 2 + (layerThic / 2)*edge[3] / norm;
 	}
-
+	*/
+	for (int i = 0; i < 8; i++)			// Loop over each  edge
+	{
+		double edge[3], norm;
+		//	using variables to represent the nodes would improve code maintenability
+		if (i % 2 == 0)
+		{
+			edge[0] = xn[oldElement[i] - 1] - xn[oldElement[i + 3] - 1]; // Calculating edge x component
+			edge[1] = yn[oldElement[i] - 1] - yn[oldElement[i + 3] - 1];
+			edge[2] = zn[oldElement[i] - 1] - zn[oldElement[i + 3] - 1];
+			norm = compute_norm(edge);
+			x[i] = (xn[oldElement[i] - 1] + xn[oldElement[i + 3] - 1]) / 2 - (layerThic / 2)*edge[1] / norm; // Layer nodes coordinates
+			x[i + 3] = (xn[oldElement[i] - 1] + xn[oldElement[i + 3] - 1]) / 2 + (layerThic / 2)*edge[1] / norm;
+			y[i] = (yn[oldElement[i] - 1] + yn[oldElement[i + 3] - 1]) / 2 - (layerThic / 2)*edge[2] / norm;
+			y[i + 3] = (yn[oldElement[i] - 1] + yn[oldElement[i + 3] - 1]) / 2 + (layerThic / 2)*edge[2] / norm;
+			z[i] = (zn[oldElement[i] - 1] + zn[oldElement[i + 3] - 1]) / 2 - (layerThic / 2)*edge[3] / norm;
+			z[i + 3] = (zn[oldElement[i] - 1] + zn[oldElement[i + 3] - 1]) / 2 + (layerThic / 2)*edge[3] / norm;
+		}
+		else
+		{
+			edge[0] = xn[oldElement[i] - 1] - xn[oldElement[i + 1] - 1]; // Calculating edge x component
+			edge[1] = yn[oldElement[i] - 1] - yn[oldElement[i + 1] - 1];
+			edge[2] = zn[oldElement[i] - 1] - zn[oldElement[i + 1] - 1];
+			norm = compute_norm(edge);
+			x[i] = (xn[oldElement[i] - 1] + xn[oldElement[i + 1] - 1]) / 2 - (layerThic / 2)*edge[1] / norm; // Layer nodes coordinates
+			x[i + 1] = (xn[oldElement[i] - 1] + xn[oldElement[i + 1] - 1]) / 2 + (layerThic / 2)*edge[1] / norm;
+			y[i] = (yn[oldElement[i] - 1] + yn[oldElement[i + 1] - 1]) / 2 - (layerThic / 2)*edge[2] / norm;
+			y[i + 1] = (yn[oldElement[i] - 1] + yn[oldElement[i + 1] - 1]) / 2 + (layerThic / 2)*edge[2] / norm;
+			z[i] = (zn[oldElement[i] - 1] + zn[oldElement[i + 1] - 1]) / 2 - (layerThic / 2)*edge[3] / norm;
+			z[i + 1] = (zn[oldElement[i] - 1] + zn[oldElement[i + 1] - 1]) / 2 + (layerThic / 2)*edge[3] / norm;
+			i += 2;
+		}
+	}
 	/* Checking if there is sufficient space on current matrices*/
-	if (tailElements <= nEl+2)				// Global connect. matrix check
+	if (tailElements <= nEl+2)				 // Global connect. matrix check
 		expandConnectMatrix();
-	if (tailNodes <= nDoF+8)				// Global nodes coordiantes vector check
+	if (tailNodes <= nDoF+8)				 // Global nodes coordiantes vector check
 		expandNodesArray();
+
+	for (int i = 0; i < 8; i++)				//Loop over local nodes
+		cMat[nEl][7] = nDoF + i+1;			// Global numbering on the layer
 
 	/*Updating Conectivity matrix*/
 	for (int i = 0; i < 4; i++)
 	{
-		cMat[element][i + 4] = nDoF + i;		//Updating 'element'
+		cMat[element][i + 4] = cMat[nEl][i];				// Updating element
 
-
-		cMat[nEl][i] = nDoF+i;					// Layer element
-		cMat[nEl][i + 4] = nDoF + i + 4; 
-
-		cMat[nEl + 1][i] = nDoF + i + 4;		// New element, with same material of 'element'
+		cMat[nEl + 1][i] = cMat[nEl][i+4];					// New element, with same material of 'element'
 		cMat[nEl + 1][i+4] = oldElement[i + 4];	
 
 	}
@@ -85,16 +116,24 @@ void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
 
 void CTmesh::expandConnectMatrix()
 {
-	tailElements *= 2;						// Optimized for Amortized complexity
-	for (int i = 0; i < 9; i++)
-		(int*)realloc(cMat[i], tailElements*sizeof(int));
-	system("PAUSE");
+	tailElements += 500;						// Optimized for Amortized complexity
+	int i;
+	int **newMatrix = (int**)realloc(cMat, 9 * sizeof(int*));
+	for (i = 0; i < 9; i++)
+		newMatrix[i] = (int*)realloc(cMat[i], tailElements* sizeof(int));
+	if (newMatrix != NULL)
+		cMat = newMatrix;
+	else
+	{
+		printf("Realloc error");
+		system("PAUSE");
+	}
 }
 
 void CTmesh::expandNodesArray()
 {
 	tailNodes *= 2;							// Optimized for Amortized complexity
-	(double*)realloc(xn, tailNodes*sizeof(double));
-	(double*)realloc(yn, tailNodes*sizeof(double));
-	(double*)realloc(zn, tailNodes*sizeof(double));
+	xn=(double*)realloc(xn, tailNodes*sizeof(double));
+	yn=(double*)realloc(yn, tailNodes*sizeof(double));
+	zn=(double*)realloc(zn, tailNodes*sizeof(double));
 }
