@@ -85,6 +85,28 @@ void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
 			i += 2;
 		}
 	}
+#define GIGA_BYTE (1024 * 1024 * 1024)
+
+	unsigned long long mallocSize = 0, numGigaBytes = 0;
+	void *mallocMemory = NULL;
+
+	do
+	{
+		mallocSize += GIGA_BYTE;
+		numGigaBytes = mallocSize / GIGA_BYTE;
+		mallocMemory = malloc(mallocSize);
+		if (mallocMemory)
+		{
+			printf("Dynamically allocated %llu GBs\n", numGigaBytes);
+			free(mallocMemory);
+		}
+		else
+		{
+			printf("Failed to allocate %llu GBs\n", numGigaBytes);
+			break;
+		}
+	} while (true);
+	system("PAUSE");
 	/* Checking if there is sufficient space on current matrices*/
 	if (tailElements <= nEl+2)				 // Global connect. matrix check
 		expandConnectMatrix();
@@ -118,9 +140,9 @@ void CTmesh::expandConnectMatrix()
 {
 	tailElements += 500;						// Optimized for Amortized complexity
 	int i;
-	int **newMatrix = (int**)realloc(cMat, 9 * sizeof(int*));
-	for (i = 0; i < 9; i++)
-		newMatrix[i] = (int*)realloc(cMat[i], tailElements* sizeof(int));
+	int **newMatrix = (int**)realloc(cMat, tailElements * sizeof(int*));
+	for (i = 0; i < tailElements; i++)
+		newMatrix[i] = (int*)realloc(cMat[i], 9* sizeof(int));
 	if (newMatrix != NULL)
 		cMat = newMatrix;
 	else

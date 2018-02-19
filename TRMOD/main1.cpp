@@ -17,8 +17,8 @@ int main(){
 	double *heatGenList, **fluxList, **convList; // Vectors that stores B.C.s information for each element
 
 	/* ESSENTIAL/DIRICHLET BOUNDARY CONDITIONS VARIABLES */
-	int *fixedNodesList, *freeNodesList; // Lists with nodes with fixed temp. (Dirichlet BC) and 'free' nodes repect. 
-	double *tempFixedNodes; // List with the fixed nodes' temperatures.
+	int *fixedNodesList=NULL, *freeNodesList=NULL; // Lists with nodes with fixed temp. (Dirichlet BC) and 'free' nodes repect. 
+	double *tempFixedNodes = NULL; // List with the fixed nodes' temperatures.
 	int nFixedNodes, nFreeNodes; // Number of nodes with natural/dirichlet Boundary conditions and those without it, respect.
 
 	/* STIFFNESS MATRIXES AND FORCE VECTORS */
@@ -47,6 +47,7 @@ int main(){
 	fgets(s, 256, INPUT);
 	sscanf(s, "%d %d %d", &nDoF, &nEl, &nElCrossSec);	// Number of elements & nodes on the model, resp.
 	CTmesh cMesh(nDoF, nEl, nElCrossSec);				// coarse/common mesh
+	printf("REFINED MESH\n nDoF: %d   nEl: %d\n\n", nDoF, nEl);
 
 
 	/* Store nodes' global coordinates >>(NODES HAVE TO BE SORTED)<<*/
@@ -80,7 +81,6 @@ int main(){
 		fgets(s, 256, INPUT);
 		sscanf(s, "%d %d %d %d %d %d %d %d %d %d %lf", &elementNumber, &cMesh.cMat[i][0], &cMesh.cMat[i][1], &cMesh.cMat[i][2], &cMesh.cMat[i][3], &cMesh.cMat[i][4], &cMesh.cMat[i][5], &cMesh.cMat[i][6], &cMesh.cMat[i][7], &cMesh.cMat[i][8], &corFactor);
 	}
-	system("PAUSE");
 	/*LAYER INPUT*/
 	int oldnEl = nEl, oldnDoF = nDoF;
 	for (int i = 0; i < oldnEl; i++)
