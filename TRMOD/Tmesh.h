@@ -10,7 +10,8 @@ public:
 	//~CTmesh(void);
 
 	void addLayer(unsigned int element, double layerMat, double layerThic);
-
+	void exportNodes(void);
+	void exportElements(void);
 
 	unsigned int nDoF, nEl, nElCrossSec;
 	double *xn, *yn, *zn;			   // Nodes global coordinates

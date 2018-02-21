@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <iostream>
 #include "Element.h"
 #include "misc.h"
@@ -90,9 +91,13 @@ int main(){
 			cMesh.addLayer(i, 80, 0.1);
 		}
 	}
+	cMesh.exportElements();
+	cMesh.exportNodes();
 	nEl = cMesh.nEl;
 	nDoF = cMesh.nDoF;
 	nFreeNodes = nDoF - nFixedNodes;
+	double spaceNodes = nDoF / 10, spaceElements = nEl / 10;
+
 	printf("REFINED MESH\n nDoF: %d   nEl: %d\n\n", nDoF, nEl);
 	freeNodesList = Matrix.Vector_Allocate_Int(nFreeNodes, 0, &allocStatus); // List with free nodes
 	double intTemp = 180.0, outTemp = 30.0;
@@ -199,7 +204,7 @@ int main(){
 	FILE *CONV;
 
 	CONV = fopen("conv.out", "w+");
-
+	int perCont = 1;
 	for (int elementcount = 1; elementcount <= nEl; elementcount++) //loop over all elements
 	{
 		for (int h = 0; h < 8; h++) // Loop over each node
@@ -314,6 +319,7 @@ int main(){
 		fprintf(OUT, "%+12.6e\n", temp[i]);
 
 	fclose(OUT);
-
+	printf("Simulation finished\n");
+	system("PAUSE");
 	return 0;
 }

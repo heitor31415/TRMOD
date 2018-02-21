@@ -42,7 +42,7 @@ int ItSolver(gsl_spmatrix *A, double *Load, double *Temp, int size)
 		status = gsl_splinalg_itersolve_iterate(C, b, tol, x, work);
 		/* print out residual norm ||C*x - b|| */
 		residual = gsl_splinalg_itersolve_normr(work);
-		//fprintf(stderr, "iter %zu residual = %.12e\n", iter, residual);
+		fprintf(stderr, "iter %zu residual = %.12e\n", iter, residual);
 		if (status == GSL_SUCCESS)
 			fprintf(stderr, "Converged\n");
 	} while (status == GSL_CONTINUE && ++iter < max_iter);

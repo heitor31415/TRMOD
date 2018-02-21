@@ -10,22 +10,22 @@ CTmesh::CTmesh(unsigned int nNodes, unsigned int nElements, unsigned int nElCS)
 	nDoF = nNodes;
 	nEl = nElements;
 	nElCrossSec = nElCS;
-	tailElements = nElements;
-	tailNodes = nNodes;
+	tailElements = 2*nElements;
+	tailNodes = 2*nNodes;
 
 
 	CMatrixStuff_Modal Matrix; // for alocating vectors and matrices (int or double)
 	
 	/* Allocating memory to store node's coordinates*/
-	xn = Matrix.Vector_Allocate(nDoF, 0.0, &allocStatus); // nDoF is the number of nodes/Deg. of Freedom(nDoF)
-	yn = Matrix.Vector_Allocate(nDoF, 0.0, &allocStatus);
-	zn = Matrix.Vector_Allocate(nDoF, 0.0, &allocStatus);
+	xn = Matrix.Vector_Allocate(tailNodes, 0.0, &allocStatus); // nDoF is the number of nodes/Deg. of Freedom(nDoF)
+	yn = Matrix.Vector_Allocate(tailNodes, 0.0, &allocStatus);
+	zn = Matrix.Vector_Allocate(tailNodes, 0.0, &allocStatus);
 
 	/* Allocating memory to store element's global nodes*/
-	cMat = Matrix.Matrix_Allocate_Int(nEl, 9, 0, &allocStatus); // nEl is the number of Elements
+	cMat = Matrix.Matrix_Allocate_Int(tailElements, 9, 0, &allocStatus); // nEl is the number of Elements
 }
 // ------------------------------------------------------------------------------------------------------------------ 
-// --- addLayer inserts a layer with layerMat conductivity and 'LayerThickness' on the middle of element 'element') 
+// --- addLayer inserts a layer with layerMat conductivity and 'LayerThickness' on the middle of element 'element+1') 
 // ------------------------------------------------------------------------------------------------------------------ 
 
 void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
@@ -63,12 +63,12 @@ void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
 			edge[1] = yn[oldElement[i] - 1] - yn[oldElement[i + 3] - 1];
 			edge[2] = zn[oldElement[i] - 1] - zn[oldElement[i + 3] - 1];
 			norm = compute_norm(edge);
-			x[i] = (xn[oldElement[i] - 1] + xn[oldElement[i + 3] - 1]) / 2 - (layerThic / 2)*edge[1] / norm; // Layer nodes coordinates
-			x[i + 3] = (xn[oldElement[i] - 1] + xn[oldElement[i + 3] - 1]) / 2 + (layerThic / 2)*edge[1] / norm;
-			y[i] = (yn[oldElement[i] - 1] + yn[oldElement[i + 3] - 1]) / 2 - (layerThic / 2)*edge[2] / norm;
-			y[i + 3] = (yn[oldElement[i] - 1] + yn[oldElement[i + 3] - 1]) / 2 + (layerThic / 2)*edge[2] / norm;
-			z[i] = (zn[oldElement[i] - 1] + zn[oldElement[i + 3] - 1]) / 2 - (layerThic / 2)*edge[3] / norm;
-			z[i + 3] = (zn[oldElement[i] - 1] + zn[oldElement[i + 3] - 1]) / 2 + (layerThic / 2)*edge[3] / norm;
+			x[i] = (xn[oldElement[i] - 1] + xn[oldElement[i + 3] - 1]) / 2 - (layerThic / 2)*edge[0] / norm; // Layer nodes coordinates
+			x[i + 3] = (xn[oldElement[i] - 1] + xn[oldElement[i + 3] - 1]) / 2 + (layerThic / 2)*edge[0] / norm;
+			y[i] = (yn[oldElement[i] - 1] + yn[oldElement[i + 3] - 1]) / 2 - (layerThic / 2)*edge[1] / norm;
+			y[i + 3] = (yn[oldElement[i] - 1] + yn[oldElement[i + 3] - 1]) / 2 + (layerThic / 2)*edge[1] / norm;
+			z[i] = (zn[oldElement[i] - 1] + zn[oldElement[i + 3] - 1]) / 2 - (layerThic / 2)*edge[2] / norm;
+			z[i + 3] = (zn[oldElement[i] - 1] + zn[oldElement[i + 3] - 1]) / 2 + (layerThic / 2)*edge[2] / norm;
 		}
 		else
 		{
@@ -76,37 +76,16 @@ void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
 			edge[1] = yn[oldElement[i] - 1] - yn[oldElement[i + 1] - 1];
 			edge[2] = zn[oldElement[i] - 1] - zn[oldElement[i + 1] - 1];
 			norm = compute_norm(edge);
-			x[i] = (xn[oldElement[i] - 1] + xn[oldElement[i + 1] - 1]) / 2 - (layerThic / 2)*edge[1] / norm; // Layer nodes coordinates
-			x[i + 1] = (xn[oldElement[i] - 1] + xn[oldElement[i + 1] - 1]) / 2 + (layerThic / 2)*edge[1] / norm;
-			y[i] = (yn[oldElement[i] - 1] + yn[oldElement[i + 1] - 1]) / 2 - (layerThic / 2)*edge[2] / norm;
-			y[i + 1] = (yn[oldElement[i] - 1] + yn[oldElement[i + 1] - 1]) / 2 + (layerThic / 2)*edge[2] / norm;
-			z[i] = (zn[oldElement[i] - 1] + zn[oldElement[i + 1] - 1]) / 2 - (layerThic / 2)*edge[3] / norm;
-			z[i + 1] = (zn[oldElement[i] - 1] + zn[oldElement[i + 1] - 1]) / 2 + (layerThic / 2)*edge[3] / norm;
+			x[i] = (xn[oldElement[i] - 1] + xn[oldElement[i + 1] - 1]) / 2 - (layerThic / 2)*edge[0] / norm; // Layer nodes coordinates
+			x[i + 1] = (xn[oldElement[i] - 1] + xn[oldElement[i + 1] - 1]) / 2 + (layerThic / 2)*edge[0] / norm;
+			y[i] = (yn[oldElement[i] - 1] + yn[oldElement[i + 1] - 1]) / 2 - (layerThic / 2)*edge[1] / norm;
+			y[i + 1] = (yn[oldElement[i] - 1] + yn[oldElement[i + 1] - 1]) / 2 + (layerThic / 2)*edge[1] / norm;
+			z[i] = (zn[oldElement[i] - 1] + zn[oldElement[i + 1] - 1]) / 2 - (layerThic / 2)*edge[2] / norm;
+			z[i + 1] = (zn[oldElement[i] - 1] + zn[oldElement[i + 1] - 1]) / 2 + (layerThic / 2)*edge[2] / norm;
 			i += 2;
 		}
 	}
-#define GIGA_BYTE (1024 * 1024 * 1024)
 
-	unsigned long long mallocSize = 0, numGigaBytes = 0;
-	void *mallocMemory = NULL;
-
-	do
-	{
-		mallocSize += GIGA_BYTE;
-		numGigaBytes = mallocSize / GIGA_BYTE;
-		mallocMemory = malloc(mallocSize);
-		if (mallocMemory)
-		{
-			printf("Dynamically allocated %llu GBs\n", numGigaBytes);
-			free(mallocMemory);
-		}
-		else
-		{
-			printf("Failed to allocate %llu GBs\n", numGigaBytes);
-			break;
-		}
-	} while (true);
-	system("PAUSE");
 	/* Checking if there is sufficient space on current matrices*/
 	if (tailElements <= nEl+2)				 // Global connect. matrix check
 		expandConnectMatrix();
@@ -114,25 +93,30 @@ void CTmesh::addLayer(unsigned int element, double layerMat, double layerThic)
 		expandNodesArray();
 
 	for (int i = 0; i < 8; i++)				//Loop over local nodes
-		cMat[nEl][7] = nDoF + i+1;			// Global numbering on the layer
+		cMat[nEl][i] = nDoF + i+1;			// Global numbering on the layer
 
-	/*Updating Conectivity matrix*/
-	for (int i = 0; i < 4; i++)
-	{
-		cMat[element][i + 4] = cMat[nEl][i];				// Updating element
+	cMat[element][2] = cMat[nEl][1];				// Updating element
+	cMat[element][3] = cMat[nEl][0];
+	cMat[element][6] = cMat[nEl][5];
+	cMat[element][7] = cMat[nEl][4];
 
-		cMat[nEl + 1][i] = cMat[nEl][i+4];					// New element, with same material of 'element'
-		cMat[nEl + 1][i+4] = oldElement[i + 4];	
-
-	}
+	cMat[nEl + 1][0] = cMat[nEl][3];
+	cMat[nEl + 1][1] = cMat[nEl][2];
+	cMat[nEl + 1][4] = cMat[nEl][7];
+	cMat[nEl + 1][5] = cMat[nEl][6];
+	cMat[nEl + 1][2] = oldElement[2];
+	cMat[nEl + 1][3] = oldElement[3];
+	cMat[nEl + 1][6] = oldElement[6];
+	cMat[nEl + 1][7] = oldElement[7];
+	
 	nEl += 2;									// Updating number of elements
 	for (int i = 0; i < 8; i++)
 	{
 		xn[nDoF+i] = x[i];
 		yn[nDoF + i] = y[i];
 		zn[nDoF + i] = z[i];
-		nDoF++;									// Updating number of nodes
 	}
+	nDoF+=8;									// Updating number of nodes
 	
 }
 
@@ -150,6 +134,7 @@ void CTmesh::expandConnectMatrix()
 		printf("Realloc error");
 		system("PAUSE");
 	}
+	printf("ELEMENTS REALLOC\n");
 }
 
 void CTmesh::expandNodesArray()
@@ -158,4 +143,28 @@ void CTmesh::expandNodesArray()
 	xn=(double*)realloc(xn, tailNodes*sizeof(double));
 	yn=(double*)realloc(yn, tailNodes*sizeof(double));
 	zn=(double*)realloc(zn, tailNodes*sizeof(double));
+	printf("NODES REALLOC\n");
+}
+void CTmesh::exportNodes(void)
+{
+	FILE *NODESEXP;
+
+	NODESEXP = fopen("nodes.out", "w+");
+	for (int i = 0; i < nDoF; i++)
+		fprintf(NODESEXP, "%+12.6e %+12.6e %+12.6e\n", xn[i],yn[i],zn[i]);
+
+	fclose(NODESEXP);
+}
+void CTmesh::exportElements(void)
+{
+	FILE *ELEMEXP;
+
+	ELEMEXP = fopen("elements.out", "w+");
+	for (int i = 0; i < nEl; i++)
+	{ 
+		for (int j = 0; j < 8;j++)
+			fprintf(ELEMEXP, "%d ", cMat[i][j]);
+		fprintf(ELEMEXP, "\n");
+	}
+	fclose(ELEMEXP);
 }
