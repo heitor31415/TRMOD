@@ -10,12 +10,15 @@ public:
 	//~CTmesh(void);
 
 	void addLayer(unsigned int element, double layerMat, double layerThic);
+	void exportNodes(void);
+	void exportElements(void);
+	void removeDuplicatedNodes(int initialNode);
 
 
-	unsigned int nDoF, nEl, nElCrossSec;
-	double *xn, *yn, *zn;			   // Nodes global coordinates
-	int **cMat;						  // Connectivity 
-	bool allocStatus;
+	unsigned int nDoF, nEl, nElCrossSec;	 // Mesh sizing
+	double *xn, *yn, *zn;					 // Nodes global coordinates
+	int **cMat;								 // Connectivity matrix
+	bool allocStatus;						// Allocation Status
 
 private:
 	unsigned int tailNodes, tailElements;

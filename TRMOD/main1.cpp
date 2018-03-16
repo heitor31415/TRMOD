@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <iostream>
 #include "Element.h"
 #include "misc.h"
@@ -28,8 +29,8 @@ int main(){
 	// Therefore SG is nDoFxnDof and SSol is nFreeNodesxnFreeNodes.
 
 
-	char s[256]; // We will use this 'string' to read the input
-	bool allocStatus;
+	char s[256];		// We will use this 'string' to read the input
+	bool allocStatus;	// Check if the allocation of big arrays was sucessful
 
 	CMatrixStuff_Modal Matrix; // for alocating vectors and matrices (int or double)
 
@@ -38,16 +39,16 @@ int main(){
 	########################## READING .dat INPUT FILE #################################
 	#################################################################################### */
 	FILE *INPUT;
-	//INPUT = fopen("modifiedDATAFlux.dat", "r"); // "fileName.dat"
-	//INPUT = fopen("modifiedDATAFlux.dat", "r");
-	INPUT = fopen("TireNEG.dat", "r");
+
+	INPUT = fopen("coarseTire.dat", "r");		// "fileName.dat"
+
 	fgets(s, 256, INPUT);// >>Text line= MESH SIZING
 
 	/* Read the sizing values, which are Number of Elements and number of nodes. */
 	fgets(s, 256, INPUT);
 	sscanf(s, "%d %d %d", &nDoF, &nEl, &nElCrossSec);	// Number of elements & nodes on the model, resp.
 	CTmesh cMesh(nDoF, nEl, nElCrossSec);				// coarse/common mesh
-	printf("REFINED MESH\n nDoF: %d   nEl: %d\n\n", nDoF, nEl);
+	printf("COARSE MESH\n nDoF: %d   nEl: %d\n\n", nDoF, nEl);
 
 
 	/* Store nodes' global coordinates >>(NODES HAVE TO BE SORTED)<<*/
@@ -65,11 +66,11 @@ int main(){
 				fixedNodesStart = false;
 				nFreeNodes = i;
 				nFixedNodes = nDoF - nFreeNodes;
-				fixedNodesList = Matrix.Vector_Allocate_Int(nFixedNodes, 0, &allocStatus); // List with 'fixed' nodes
-				tempFixedNodes = Matrix.Vector_Allocate(nFixedNodes, 0.0, &allocStatus); // List with each fixed node temperature
+				fixedNodesList = Matrix.Vector_Allocate_Int(nFixedNodes, 0, &allocStatus);	 // List with 'fixed' nodes
+				tempFixedNodes = Matrix.Vector_Allocate(nFixedNodes, 0.0, &allocStatus);	// List with each fixed node temperature
 			}
 			fixedNodesList[fixedNodesCounter] = globalNodeNumber;
-			tempFixedNodes[fixedNodesCounter] = 120.0;						// A map can be used to fixed nodes*
+			tempFixedNodes[fixedNodesCounter] = 120.0;										// A map can be used to fixed nodes*
 			fixedNodesCounter++;
 		}
 	}
@@ -81,21 +82,33 @@ int main(){
 		fgets(s, 256, INPUT);
 		sscanf(s, "%d %d %d %d %d %d %d %d %d %d %lf", &elementNumber, &cMesh.cMat[i][0], &cMesh.cMat[i][1], &cMesh.cMat[i][2], &cMesh.cMat[i][3], &cMesh.cMat[i][4], &cMesh.cMat[i][5], &cMesh.cMat[i][6], &cMesh.cMat[i][7], &cMesh.cMat[i][8], &corFactor);
 	}
+
 	/*LAYER INPUT*/
 	int oldnEl = nEl, oldnDoF = nDoF;
 	for (int i = 0; i < oldnEl; i++)
 	{
-		if (cMesh.cMat[i][8] == 303) //inner element
+		if (cMesh.cMat[i][8] == 302) //inner element on the belt
 		{
 			cMesh.addLayer(i, 80, 0.1);
 		}
 	}
-	nEl = cMesh.nEl;
+	printf("REFINED MESH\n nDoF: %d   nEl: %d\n\n", cMesh.nDoF, cMesh.nEl);
+
+	printf("REMOVING DUPLICATED NODES AND RENUMBERING\n");
+	cMesh.removeDuplicatedNodes(1); // Remove and renumber nodes, from the specified node
+
+	cMesh.exportNodes();		// Export nodes coordinates to a .proc file
+	cMesh.exportElements();		// Append connextivity matrix in the .proc file
+
+	/* Retrieving the number of nodes and number of elements of the modified mesh */
+	nEl = cMesh.nEl;		
 	nDoF = cMesh.nDoF;
 	nFreeNodes = nDoF - nFixedNodes;
-	printf("REFINED MESH\n nDoF: %d   nEl: %d\n\n", nDoF, nEl);
+
+
 	freeNodesList = Matrix.Vector_Allocate_Int(nFreeNodes, 0, &allocStatus); // List with free nodes
-	double intTemp = 180.0, outTemp = 30.0;
+	double intTemp = 180.0, outTemp = 30.0; // Temperature of the inner air and the ambient air
+
 	/* ####### READING BOUNDARY CONDITIONS #########*/
 	heatGenList = Matrix.Vector_Allocate(nEl, 0.0, &allocStatus); // Stores the Heat Generation of each Element
 	fluxList = Matrix.Matrix_Allocate(nEl, 6, 0.0, &allocStatus); //     "      Heat flux in each Face of each Element (HEX8)
@@ -114,8 +127,7 @@ int main(){
 	double BCvalue; // Variable that store the BC value, it is used when the BC value and its index are read at the same time.
 
 
-	// Free nodes *OBS: The nodes number have to be complete and sorted, so if there is
-	// 100 nodes, the nodes have to be numbered from 1 to 100.
+	// Free nodes *OBS: The nodes number have to be complete and sorted, so if there is 100 nodes, the nodes have to be numbered from 1 to 100.
 	int j = 0;
 	for (int i = 0; i < nFreeNodes; i++){
 		while ((fixedNodesList[j] <= i + 1 + j) && j < nFixedNodes) // This loop eliminates the nodes with Dirichlet BC
@@ -124,9 +136,21 @@ int main(){
 	}
 	fclose(INPUT);
 	/* #################################################################################################  */
-	printf("READ FINISHED\n");
-	printf("nDoF: %d, freeDoF: %d, fixedDoF: %d, Elements: %d\n", oldnDoF, nFreeNodes, nFixedNodes, oldnEl);
-	system("PAUSE");
+	printf("READ FINISHED, DUPLICATED NODES REMOVED\n\n FINAL MESH:\n");
+	printf("nDoF: %d, freeDoF: %d, fixedDoF: %d, Elements: %d\n", cMesh.nDoF, nFreeNodes, nFixedNodes, cMesh.nEl);
+
+
+
+
+	FILE *FIXEDNODES;
+
+	// Create a file with the fixed nodes
+	FIXEDNODES = fopen("fixednodes.out", "w+");
+	for (int i = 0; i < nFixedNodes; i++)
+		fprintf(FIXEDNODES, "%d\n", fixedNodesList[i]);
+	fclose(FIXEDNODES);
+
+
 
 	// open binary file for storing the temperatures
 	FILE *BINARYRESULT;
@@ -166,11 +190,9 @@ int main(){
 	//gsl_spmatrix *SGt = gsl_spmatrix_alloc(nDoF, nDoF);
 	gsl_spmatrix *SGt = gsl_spmatrix_alloc_nzmax(nDoF, nDoF, 64 * nEl, GSL_SPMATRIX_TRIPLET);
 	gsl_spmatrix_set_zero(SGt);
-	if (allocStatus) printf("SG Allocated succefully\n"); system("PAUSE");
+
 	//SSol = Matrix.Matrix_Allocate(nFreeNodes, nFreeNodes, 0.0, &allocStatus); // Just solving free Nodes
 	gsl_spmatrix *SSolt = gsl_spmatrix_alloc_nzmax(nFreeNodes, nFreeNodes, 64 * nEl, GSL_SPMATRIX_TRIPLET);
-	if (allocStatus) printf("SSol Allocated succefully\n");
-	system("PAUSE");
 
 	FG = Matrix.Vector_Allocate(nDoF, 0.0, &allocStatus);
 	FSol = Matrix.Vector_Allocate(nFreeNodes, 0.0, &allocStatus);
@@ -196,10 +218,13 @@ int main(){
 	fluxFlocal:  Local Heat Flux foce vector
 	Fsum: Local Force Vector with contributions of all BCs on the element.
 	Ssum:  Local Stif. matrix with contribution of conduction & convection       */
-	FILE *CONV;
 
+	
+	FILE *CONV; // exporting faces with convection
 	CONV = fopen("conv.out", "w+");
 
+
+	int perCont = 1;
 	for (int elementcount = 1; elementcount <= nEl; elementcount++) //loop over all elements
 	{
 		for (int h = 0; h < 8; h++) // Loop over each node
@@ -225,7 +250,7 @@ int main(){
 		for (int w = 0; w < 6; w++) // Loop over the faces to calc. flux BCs
 			if (fluxList[elementcount - 1][w] != 0.0){
 				elem.Comp_Flux(fluxList[elementcount - 1][w], fluxFlocal, faceNumberConverter(w));
-				printf("Flux on element %d of %f\n", elementcount, fluxList[elementcount - 1][w]);
+				//printf("Flux on element %d of %f\n", elementcount, fluxList[elementcount - 1][w]);
 				math.compute_sumVec(fluxFlocal, Fsum);
 			}
 
@@ -235,12 +260,12 @@ int main(){
 				if (cMesh.cMat[elementcount - 1][8] == 301) //inner element
 				{
 					ambTemp = intTemp;
-					//fprintf(CONV, "%d:0\n", elementcount);
+					fprintf(CONV, "%d:0\n", elementcount);
 				}
 				else if (cMesh.cMat[elementcount - 1][8] == 300 + nElCrossSec) // outter element
 				{
 					ambTemp = outTemp;
-					fprintf(CONV, "%d:2\n", elementcount);
+					//fprintf(CONV, "%d:2\n", elementcount);
 				}
 				elem.Comp_Convection_Diagonal(convList[elementcount - 1][w], ambTemp, localSConvection, convFlocal, faceNumberConverter(w));
 				math.compute_sumVec(convFlocal, Fsum);
@@ -262,7 +287,6 @@ int main(){
 	}
 	fclose(CONV);
 	printf("ASSEMBLY FINISHED, APPLYING BC\n");
-	system("PAUSE");
 	/*Applying boundary conditions on the force matrix*/
 	for (int fNode = 0; fNode < nFreeNodes; fNode++) // Loop over the free nodes (fNode)
 		for (int bNode = 0; bNode < nFixedNodes; bNode++) // Loop over the nodes with Diri. BC (bNode stands for Bounded node)
@@ -275,12 +299,11 @@ int main(){
 	for (int i = 0; i < nFreeNodes; i++){
 		for (int j = 0; j < nFreeNodes; j++)
 			gsl_spmatrix_set(SSolt, i, j, gsl_spmatrix_get(SGt, freeNodesList[i] - 1, freeNodesList[j] - 1));
-		//SSol[i][j] = SG[freeNodesList[i] - 1][freeNodesList[j] - 1];
+			//SSol[i][j] = SG[freeNodesList[i] - 1][freeNodesList[j] - 1];
 
 		FSol[i] = FG[freeNodesList[i] - 1];
 	}
 	printf("BC APPLIED, INIT SOLVER\n");
-	system("PAUSE");
 	ItSolver(SSolt, FSol, tempSol, nFreeNodes); // Calling the solver, the result will be stored in tempSol vector
 
 	double *bigtemp;
@@ -314,6 +337,7 @@ int main(){
 		fprintf(OUT, "%+12.6e\n", temp[i]);
 
 	fclose(OUT);
-
+	printf("Simulation finished\n");
+	system("PAUSE");
 	return 0;
 }
